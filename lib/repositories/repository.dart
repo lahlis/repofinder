@@ -1,18 +1,30 @@
-import 'package:http/http.dart' as http;
+import 'package:dio/dio.dart';
 import 'package:repofinder/models/repo_model.dart';
-import 'dart:convert';
+import 'package:pretty_dio_logger/pretty_dio_logger.dart';
+
 
 Future<List<RepoModel>> getRepos(String username) async {
-  final response =
-      await http.get(Uri.parse('https://api.github.com/users/$username/repos'));
+  final dio = Dio();
+  dio.interceptors.add(PrettyDioLogger(
+    requestHeader: true,
+    requestBody: true,
+    responseBody: false,
+    responseHeader: false,
+    error: true,
+    compact: false,
+  ));
   
-  if(response.statusCode == 200){
-  final json = jsonDecode(response.body);
-  return List<RepoModel>.from(json.map((element) {
-    return RepoModel.fromJson(element);
-  }));
+
+  final response = await dio
+      .get<List<dynamic>>('https://api.github.com/users/$username/repos');
+
+  if (response.statusCode == 200 && response.data != null) {
+    final result = response.data as List<dynamic>;
+
+    return List<RepoModel>.from(result.map((element) {
+      return RepoModel.fromJson(element as Map<String, dynamic>);
+    }));
   } else {
     return Future.error('Um erro ocorreu!');
   }
-
 }
